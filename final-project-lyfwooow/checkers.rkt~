@@ -1,0 +1,93 @@
+#lang racket
+
+(require "dd.rkt")
+(require 2htdp/image)
+(require 2htdp/universe)
+(require math/number-theory)
+(require 2htdp/abstraction)
+(require rackunit)
+(provide (all-defined-out))
+
+;; revealed-sp? : Board Screen-POSN Screen-POSN -> boolean
+;; check if the given x and y is in the (board-revealed board)
+(define (revealed-sp? board x y)
+  (revealed? (board-revealed board) (convert-screen-posn (make-posn x y))))
+
+; revealed? : [listof Board-POSN] Board-> Bool 
+; check if is revealed
+(define (revealed? list board)
+  (cond
+    [(empty? list) #f]
+    [(equal-posn? (first list) board) #t]
+
+
+    
+    [else
+     (revealed? (rest list) board)]))
+
+(check-equal? (revealed? (list (make-posn 1 4)
+                               (make-posn 2 4)
+                               (make-posn 3 4)
+                               (make-posn 4 4)
+                               (make-posn 5 4)
+                               (make-posn 3 5)
+                               (make-posn 2 6)
+                               (make-posn 3 6)
+                               (make-posn 4 6))
+                         (make-posn 2 6))
+              #t)
+
+(check-equal? (revealed-sp? (make-board (make-posn 3 3)
+                                        (list (make-posn 1 4)
+                                              (make-posn 2 4)
+                                              (make-posn 3 4)
+                                              (make-posn 4 4)
+                                              (make-posn 5 4)
+                                              (make-posn 3 5)
+                                              (make-posn 2 6)
+                                              (make-posn 3 6)
+                                              (make-posn 4 6))
+                                        (list (make-posn 2 5)))
+                            95
+                            215)
+              #t)
+
+; find-body-sp? : Board Screen-POSN Screen-POSN -> Bool 
+; check if is a block of body
+(define (find-body-sp? board x y)
+  (find-body? (board-body board) (convert-screen-posn (make-posn x y))))
+
+(check-equal? (find-body-sp? (make-board (make-posn 3 3)
+                                         (list (make-posn 1 4)
+                                               (make-posn 2 4)
+                                               (make-posn 3 4)
+                                               (make-posn 4 4)
+                                               (make-posn 5 4)
+                                               (make-posn 3 5)
+                                               (make-posn 2 6)
+                                               (make-posn 3 6)
+                                               (make-posn 4 6))
+                                         (list (make-posn 2 5)))
+                             95
+                             255)
+              #t)
+
+; find-head-sp? : Board Screen-POSN Screen-POSN -> Bool 
+; check if is revealed
+(define (find-head-sp? board x y)
+  (equal-posn? (board-head board) (convert-screen-posn (make-posn x y))))
+
+(check-equal? (find-head-sp? (make-board (make-posn 3 3)
+                                         (list (make-posn 1 4)
+                                               (make-posn 2 4)
+                                               (make-posn 3 4)
+                                               (make-posn 4 4)
+                                               (make-posn 5 4)
+                                               (make-posn 3 5)
+                                               (make-posn 2 6)
+                                               (make-posn 3 6)
+                                               (make-posn 4 6))
+                                         (list (make-posn 2 5)))
+                             135
+                             138)
+              #t)

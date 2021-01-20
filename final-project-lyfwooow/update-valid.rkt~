@@ -1,0 +1,105 @@
+#lang racket
+
+(require "dd.rkt")
+(require 2htdp/image)
+(require 2htdp/universe)
+(require math/number-theory)
+(require 2htdp/abstraction)
+(require rackunit)
+(provide (all-defined-out))
+
+
+(define AIRPLANE-WING        2)
+(define AIRPLANE-BODY        3)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;valid1 : Board-POSN
+;          [Listof Board-POSN]
+;          [Listof Board-POSN] -> Possibility
+;;to check the possibility of whether the given posn is valid
+
+(define list-up (list 2 2 3 0
+                      2 2 0 3
+                      3 0 2 2
+                      0 3 2 2))
+
+(define (valid-up list-of-border posn count check)
+  (cond
+    [(and (<= (+ (posn-x posn) (list-ref list-of-border 0)) BORDER-DOWN)
+          (>= (- (posn-x posn) (list-ref list-of-border 1)) BORDER-TOP)
+          (<= (+ (posn-y posn) (list-ref list-of-border 2)) BORDER-DOWN)
+          (>= (- (posn-y posn) (list-ref list-of-border 3)) BORDER-TOP)
+          (= check 0))
+     (valid-up (take-right list-of-border 3) posn (+ count COUNT-ONCE) (+ check 1))]
+    [(not (and (<= (+ (posn-x posn) (list-ref list-of-border 0)) BORDER-DOWN)
+               (>= (- (posn-x posn) (list-ref list-of-border 1)) BORDER-TOP)
+               (<= (+ (posn-y posn) (list-ref list-of-border 2)) BORDER-DOWN)
+               (>= (- (posn-y posn) (list-ref list-of-border 3)) BORDER-TOP)
+               (= check 0)))
+     (valid-up (take-right list-of-border 3) posn count (+ check 1))]))
+
+
+(define (valid1 posn count check)
+  (cond
+    [(and (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-x posn) 2) BORDER-DOWN);
+          (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (= check 0))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (<= (+ (posn-y posn) 3) BORDER-DOWN)))
+      (= check 0))
+     (valid1 posn count (+ check 1))]
+     
+    ;;;;;
+    [(and (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 3) BORDER-TOP)
+          (= check 1))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 3) BORDER-TOP)))
+      (= check 1))
+     (valid1 posn count (+ check 1))]
+
+    ;;;;;
+    [(and (>= (- (posn-y posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (= check 2))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-y posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (<= (+ (posn-x posn) 3) BORDER-DOWN)))
+      (= check 2))
+     (valid1 posn count (+ check 1))]
+
+    ;;;;
+    [(and (>= (- (posn-y posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 3) BORDER-TOP)
+          (= check 3))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-y posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 3) BORDER-TOP)))
+      (= check 3))
+     (valid1 posn count (+ check 1))]
+
+    
+    [else
+     count]))

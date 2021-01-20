@@ -1,0 +1,121 @@
+#lang racket
+
+(require "dd.rkt" "convert.rkt" "checkers.rkt" "update-valid.rkt")
+(require 2htdp/image)
+(require 2htdp/universe)
+(require math/number-theory)
+(require 2htdp/abstraction)
+(require rackunit)
+(provide (all-defined-out))
+
+; -> [Listof [Listof Board-POSN]]
+(define (count-list-of-airplane posns)
+  (cond
+    [(and (< (posn-x (first posns)) 5)
+          (> (posn-x (first posns)) 6))
+     (cond
+       [(and (< (posn-y (first posns)) 4)
+             (>= (posn-y (first posns)) 0))
+        (cons (construct-up-airplane (first posns))
+              (count-list-of-airplane (rest posns)))]
+       [(and (<= (posn-y (first posns)) 6)
+             (> (posn-y (first posns)) 2))
+        (cons (construct-down-airplane (first posns))
+              (count-list-of-airplane (rest posns)))])]
+
+    [(and (< (posn-y (first posns)) 5)
+          (> (posn-y (first posns)) 6))
+     (cond
+       [(and (< (posn-x (first posns)) 4)
+             (>= (posn-x (first posns)) 0))
+        (cons (construct-left-airplane (first posns))
+              (count-list-of-airplane (rest posns)))]
+       [(and (<= (posn-x (first posns)) 6)
+             (> (posn-x (first posns)) 2))
+        (cons (construct-right-airplane (first posns))
+              (count-list-of-airplane (rest posns)))])]))
+
+
+
+;; valid-airplane : board-posn direction -> Board or #false
+;; check if it's the valid airplane, return Board or false
+;; strategy : structral decomposition
+(define (valid-airplane head dir)
+  (cond
+    [(and (= dir 0) ;"up"
+          (>= (- (posn-x head) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-x head) AIRPLANE-WING) BORDER-DOWN)
+          (<= (+ (posn-y head) AIRPLANE-BODY) BORDER-DOWN))
+     (make-board head (construct-up-airplane head) '())]
+    [(and (= dir 1) ;"down"
+          (>= (- (posn-x head) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-x head) AIRPLANE-WING) BORDER-DOWN)
+          (>= (- (posn-y head) AIRPLANE-BODY) BORDER-TOP))
+     (make-board head (construct-down-airplane head) '())]
+    [(and (= dir 2) ;"left"
+          (>= (- (posn-y head) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-y head) AIRPLANE-WING) BORDER-DOWN)
+          (<= (+ (posn-x head) AIRPLANE-BODY) BORDER-DOWN))
+     (make-board head (construct-left-airplane head) '())]
+    [(and (= dir 3) ;"right"
+          (>= (- (posn-y head) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-y head) AIRPLANE-WING) BORDER-DOWN)
+          (>= (- (posn-x head) AIRPLANE-BODY) BORDER-TOP))
+     (make-board head (construct-right-airplane head) '())]
+    [else
+     #f]))
+
+
+;; construct-up-airplane : head -> [Listof Board-Posn]
+;; to construct a list of body of an UP airplane
+(define (construct-up-airplane head)
+  (list (make-posn (- (posn-x head) 2) (+ (posn-y head) 1))
+        (make-posn (- (posn-x head) 1) (+ (posn-y head) 1))
+        (make-posn (posn-x head) (+ (posn-y head) 1))
+        (make-posn (+ (posn-x head) 1) (+ (posn-y head) 1))
+        (make-posn (+ (posn-x head) 2) (+ (posn-y head) 1))  ;;wing
+        (make-posn (posn-x head) (+ (posn-y head) 2))        ;;body
+        (make-posn (- (posn-x head) 1) (+ (posn-y head) 3))
+        (make-posn (posn-x head) (+ (posn-y head) 3))
+        (make-posn (+ (posn-x head) 1) (+ (posn-y head) 3))));;tail
+
+;; construct-down-airplane : head -> [Listof Board-Posn]
+;; to construct a list of body of an DOWN airplane
+(define (construct-down-airplane head)
+  (list (make-posn (- (posn-x head) 2) (- (posn-y head) 1))
+        (make-posn (- (posn-x head) 1) (- (posn-y head) 1))
+        (make-posn (posn-x head) (- (posn-y head) 1))
+        (make-posn (+ (posn-x head) 1) (- (posn-y head) 1))
+        (make-posn (+ (posn-x head) 2) (- (posn-y head) 1))  ;;wing
+        (make-posn (posn-x head) (- (posn-y head) 2))        ;;body
+        (make-posn (- (posn-x head) 1) (- (posn-y head) 3))
+        (make-posn (posn-x head) (- (posn-y head) 3))
+        (make-posn (+ (posn-x head) 1) (- (posn-y head) 3))));;tail
+
+;; construct-left-airplane : head -> [Listof Board-Posn]
+;; to construct a list of body of an LEFT airplane
+(define (construct-left-airplane head)
+  (list (make-posn (+ (posn-x head) 1) (- (posn-y head) 2))
+        (make-posn (+ (posn-x head) 1) (- (posn-y head) 1))
+        (make-posn (+ (posn-x head) 1) (posn-y head))
+        (make-posn (+ (posn-x head) 1) (+ (posn-y head) 1))
+        (make-posn (+ (posn-x head) 1) (+ (posn-y head) 2))  ;;wing
+        (make-posn (+ (posn-x head) 2) (posn-y head))        ;;body
+        (make-posn (+ (posn-x head) 3) (- (posn-y head) 1))
+        (make-posn (+ (posn-x head) 3) (posn-y head))
+        (make-posn (+ (posn-x head) 3) (+ (posn-y head) 1))));;tail
+
+
+;; construct-right-airplane : head -> [Listof Board-Posn]
+;; to construct a list of body of an LEFT airplane
+(define (construct-right-airplane head)
+  (list (make-posn (- (posn-x head) 1) (- (posn-y head) 2))
+        (make-posn (- (posn-x head) 1) (- (posn-y head) 1))
+        (make-posn (- (posn-x head) 1) (posn-y head))
+        (make-posn (- (posn-x head) 1) (+ (posn-y head) 1))
+        (make-posn (- (posn-x head) 1) (+ (posn-y head) 2))  ;;wing
+        (make-posn (- (posn-x head) 2) (posn-y head))        ;;body
+        (make-posn (- (posn-x head) 3) (- (posn-y head) 1))
+        (make-posn (- (posn-x head) 3) (posn-y head))
+        (make-posn (- (posn-x head) 3) (+ (posn-y head) 1))));;tail
+

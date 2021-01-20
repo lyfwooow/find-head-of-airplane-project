@@ -1,0 +1,763 @@
+#lang racket
+
+(require "dd.rkt")
+(require 2htdp/image)
+(require 2htdp/universe)
+(require math/number-theory)
+(require 2htdp/abstraction)
+(require rackunit)
+(provide (all-defined-out))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;valid1 : Board-POSN
+;          [Listof Board-POSN]
+;          [Listof Board-POSN] -> Possibility
+;;to check the possibility of whether the given posn is valid
+
+
+(define (valid1 posn count check)
+  (cond
+    [(and (>= (- (posn-x posn) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-x posn) AIRPLANE-WING) BORDER-DOWN)
+          (<= (+ (posn-y posn) AIRPLANE-BODY) BORDER-DOWN)
+          (= check 0))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) AIRPLANE-WING) BORDER-TOP)
+            (<= (+ (posn-x posn) AIRPLANE-WING) BORDER-DOWN)
+            (<= (+ (posn-y posn) AIRPLANE-BODY) BORDER-DOWN)))
+      (= check 0))
+     (valid1 posn count (+ check 1))]
+     
+    ;;;;;
+    [(and (>= (- (posn-x posn) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-x posn) AIRPLANE-WING) BORDER-DOWN)
+          (>= (- (posn-y posn) AIRPLANE-BODY) BORDER-TOP)
+          (= check 1))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) AIRPLANE-WING) BORDER-TOP)
+            (<= (+ (posn-x posn) AIRPLANE-WING) BORDER-DOWN)
+            (>= (- (posn-y posn) AIRPLANE-BODY) BORDER-TOP)))
+      (= check 1))
+     (valid1 posn count (+ check 1))]
+
+    ;;;;;
+    [(and (>= (- (posn-y posn) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-y posn) AIRPLANE-WING) BORDER-DOWN)
+          (<= (+ (posn-x posn) AIRPLANE-BODY) BORDER-DOWN)
+          (= check 2))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-y posn) AIRPLANE-WING) BORDER-TOP)
+            (<= (+ (posn-y posn) AIRPLANE-WING) BORDER-DOWN)
+            (<= (+ (posn-x posn) AIRPLANE-BODY) BORDER-DOWN)))
+      (= check 2))
+     (valid1 posn count (+ check 1))]
+
+    ;;;;
+    [(and (>= (- (posn-y posn) AIRPLANE-WING) BORDER-TOP)
+          (<= (+ (posn-y posn) AIRPLANE-WING) BORDER-DOWN)
+          (>= (- (posn-x posn) AIRPLANE-BODY) BORDER-TOP)
+          (= check 3))
+     (valid1 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-y posn) AIRPLANE-WING) BORDER-TOP)
+            (<= (+ (posn-y posn) AIRPLANE-WING) BORDER-DOWN)
+            (>= (- (posn-x posn) AIRPLANE-BODY) BORDER-TOP)))
+      (= check 3))
+     (valid1 posn count (+ check 1))]
+
+    
+    [else
+     count]))
+
+
+;exmaple:
+(check-equal? (valid1 (make-posn 3 4) 0 0) 3)
+
+
+;;valid2 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid 
+(define (valid2 posn count check)
+  (cond
+    [(and (<= (+ (posn-x posn) 4) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (= check 0))
+     (valid2 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 4) BORDER-DOWN)
+            (>= (- (posn-y posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)))
+      (= check 0))
+     (valid2 posn count (+ check 1))]
+    ;;;;;
+    [(and (>= (- (posn-x posn) 4) BORDER-TOP)
+          (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 1))
+     (valid2 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 4) BORDER-TOP)
+            (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 1))
+     (valid2 posn count (+ check 1))]
+    ;;;;
+    [(and (>= (- (posn-y posn) 4) BORDER-TOP)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (= check 2))
+     (valid2 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-y posn) 4) BORDER-TOP)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-x posn) 2) BORDER-DOWN)))
+      (= check 2))
+     (valid2 posn count (+ check 1))]
+    ;;;;;
+    [(and (<= (+ (posn-y posn) 4) BORDER-DOWN)
+          (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (= check 3))
+     (valid2 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-y posn) 4) BORDER-DOWN)
+            (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)))
+      (= check 3))
+     (valid2 posn count (+ check 1))]
+    [else
+     count]))
+
+
+;;valid3 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid
+
+(define (valid3 posn count check)
+  (cond
+    ;;;up
+    [(and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (= check 0))
+     (valid3 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (>= (- (posn-y posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)))
+      (= check 0))
+     (valid3 posn count (+ check 1))]
+
+    
+    ;;;;;down
+    [(and (>= (- (posn-x posn) 3) BORDER-TOP)
+          (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 1))
+     (valid3 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 3) BORDER-TOP)
+            (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 1))
+     (valid3 posn count (+ check 1))]
+
+
+    
+    ;;;;left
+    [(and (>= (- (posn-y posn) 3) BORDER-TOP)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (= check 2))
+     (valid3 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-y posn) 3) BORDER-TOP)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-x posn) 2) BORDER-DOWN)))
+      (= check 2))
+     (valid3 posn count (+ check 1))]
+
+    ;;;;;right
+    [(and (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (= check 3))
+     (valid3 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and  (<= (+ (posn-y posn) 3) BORDER-DOWN)
+             (>= (- (posn-y posn) 1) BORDER-TOP)
+             (<= (+ (posn-x posn) 1) BORDER-DOWN)
+             (>= (- (posn-x posn) 2) BORDER-TOP)))
+      (= check 3))
+     (valid3 posn count (+ check 1))]
+    [else
+     count]))
+
+;;;exmaple:
+(check-equal? (valid3 (make-posn 3 4) 0 0) 3)
+(check-equal? (valid3 (make-posn 3 3) 0 0) 4)
+
+
+
+;;valid4 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid
+
+(define (valid4 posn count check)
+  (cond
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (= check 0))
+     (valid4 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (>= (- (posn-y posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)))
+      (= check 0))
+     (valid4 posn count (+ check 1))]
+    ;;;;;
+
+    [(and (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 1))
+     (valid4 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 1))
+     (valid4 posn count (+ check 1))]
+
+    ;;;;
+    [(and (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (= check 2))
+     (valid4 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)))
+      (= check 2))
+     (valid4 posn count (+ check 1))]
+
+    ;;;;;
+    [(and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 3))
+     (valid4 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 3))
+     (valid4 posn count (+ check 1))]
+    [else
+     count]))
+
+;;;exmaple:
+(check-equal? (valid4 (make-posn 3 4) 0 0) 4)
+(check-equal? (valid4 (make-posn 3 3) 0 0) 4)
+(check-equal? (valid4 (make-posn 3 5) 0 0) 1)
+
+
+
+;;valid5 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid
+
+(define (valid5 posn count check)
+  (cond
+
+    ;;;up
+    [(and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 3) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (= check 0))
+     (valid5 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 3) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 1) BORDER-TOP)))
+      (= check 0))
+     (valid5 posn count (+ check 1))]
+
+    
+    ;;;;;down
+    [(and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 1))
+     (valid5 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 1))
+     (valid5 posn count (+ check 1))]
+
+    ;;;;left
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (= check 2))
+     (valid5 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 3) BORDER-DOWN)
+            (>= (- (posn-y posn) 1) BORDER-TOP)))
+      (= check 2))
+     (valid5 posn count (+ check 1))]
+
+    ;;;;;right
+    [(and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 3) BORDER-TOP)
+          (= check 3))
+     (valid5 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 3) BORDER-TOP)))
+      (= check 3))
+     (valid5 posn count (+ check 1))]
+    [else
+     count]))
+
+;exmaple:
+(check-equal? (valid5 (make-posn 3 3) 0 0) 4)
+(check-equal? (valid5 (make-posn 3 4) 0 0) 3)
+(check-equal? (valid5 (make-posn 3 5) 0 0) 2)
+(check-equal? (valid5 (make-posn 2 2) 0 0) 2)
+
+
+
+
+;;valid6 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is vali
+
+
+(define (valid6 posn count check)
+  (cond
+
+    ;;;up
+    [(and (>= (- (posn-x posn) 4) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (= check 0))
+     (valid6 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 4) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 1) BORDER-TOP)))
+      (= check 0))
+     (valid6 posn count (+ check 1))]
+
+    
+    ;;;;;down
+    [(and (<= (+ (posn-x posn) 4) BORDER-DOWN)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 1))
+     (valid6 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 4) BORDER-DOWN)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 1))
+     (valid6 posn count (+ check 1))]
+
+    ;;;;left
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 4) BORDER-DOWN)
+          (= check 2))
+     (valid6 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 4) BORDER-DOWN)))
+      (= check 2))
+     (valid6 posn count (+ check 1))]
+
+    ;;;;;right
+    [(and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (>= (- (posn-y posn) 4) BORDER-TOP)
+          (= check 3))
+     (valid6 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (>= (- (posn-y posn) 4) BORDER-TOP)))
+      (= check 3))
+     (valid6 posn count (+ check 1))]
+    [else
+     count]))
+
+;;exmaple:
+(check-equal? (valid6 (make-posn 0 0) 0 0) 0)
+(check-equal? (valid6 (make-posn 3 3) 0 0) 0)
+(check-equal? (valid6 (make-posn 3 4) 0 0) 1)
+(check-equal? (valid6 (make-posn 3 5) 0 0) 1)
+(check-equal? (valid6 (make-posn 2 2) 0 0) 2)
+
+;;valid7 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid
+
+
+(define (valid7 posn count check)
+  (cond
+
+    ;;;up
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 0))
+     (valid7 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 0))
+     (valid7 posn count (+ check 1))]
+
+    
+    ;;;;;down
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (= check 1))
+     (valid7 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 1) BORDER-TOP)))
+      (= check 1))
+     (valid7 posn count (+ check 1))]
+
+    ;;;;left
+    [(and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 2))
+     (valid7 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 2))
+     (valid7 posn count (+ check 1))]
+
+    ;;;;;right
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 3))
+     (valid7 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 3))
+     (valid7 posn count (+ check 1))]
+    [else
+     count]))
+
+
+;exmaple:
+(check-equal? (valid7 (make-posn 0 0) 0 0) 0)
+(check-equal? (valid7 (make-posn 3 3) 0 0) 4)
+(check-equal? (valid7 (make-posn 3 4) 0 0) 4)
+(check-equal? (valid7 (make-posn 3 5) 0 0) 1)
+(check-equal? (valid7 (make-posn 2 2) 0 0) 4)
+
+
+
+;;valid8 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid
+
+
+(define (valid8 posn count check)
+  (cond
+
+    ;;;up
+    [(and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (>= (- (posn-y posn) 3) BORDER-TOP)
+          (= check 0))
+     (valid8 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (>= (- (posn-y posn) 3) BORDER-TOP)))
+      (= check 0))
+     (valid8 posn count (+ check 1))]
+
+    
+    ;;;;;down
+    [(and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 3) BORDER-TOP)
+          (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (= check 1))
+     (valid8 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 3) BORDER-TOP)
+            (<= (+ (posn-y posn) 3) BORDER-DOWN)))
+      (= check 1))
+     (valid8 posn count (+ check 1))]
+
+    ;;;;left
+    [(and (>= (- (posn-x posn) 3) BORDER-TOP)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 3) BORDER-TOP)
+          (= check 2))
+     (valid8 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 3) BORDER-TOP)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 3) BORDER-TOP)))
+      (= check 2))
+     (valid8 posn count (+ check 1))]
+
+    ;;;;;right
+    [(and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (= check 3))
+     (valid8 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+            (<= (+ (posn-y posn) 3) BORDER-DOWN)
+            (>= (- (posn-y posn) 1) BORDER-TOP)))
+      (= check 3))
+     (valid8 posn count (+ check 1))]
+    
+    [else
+     count]))
+
+;;;exmaple:
+(check-equal? (valid8 (make-posn 0 0) 0 0) 0)
+(check-equal? (valid8 (make-posn 3 3) 0 0) 4)
+(check-equal? (valid8 (make-posn 3 5) 0 0) 2)
+(check-equal? (valid8 (make-posn 1 5) 0 0) 1)
+(check-equal? (valid8 (make-posn 2 2) 0 0) 1)
+
+
+
+;;valid9 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid
+(define (valid9 posn count check)
+  (cond
+    ;;;up
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (>= (- (posn-y posn) 3) BORDER-TOP)
+          (= check 0))
+     (valid9 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (>= (- (posn-y posn) 3) BORDER-TOP)))
+      (= check 0))
+     (valid9 posn count (+ check 1))]
+   
+    ;;;;;down
+    [(and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+          (>= (- (posn-x posn) 2) BORDER-TOP)
+          (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (= check 1))
+     (valid9 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 2) BORDER-DOWN)
+            (>= (- (posn-x posn) 2) BORDER-TOP)
+            (<= (+ (posn-y posn) 3) BORDER-DOWN)))
+      (= check 1))
+     (valid9 posn count (+ check 1))]
+
+    ;;;;left
+    [(and (>= (- (posn-x posn) 3) BORDER-TOP)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 2))
+     (valid9 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 3) BORDER-TOP)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 2))
+     (valid9 posn count (+ check 1))]
+
+    ;;;;;right
+    [(and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (<= (+ (posn-y posn) 2) BORDER-DOWN)
+          (>= (- (posn-y posn) 2) BORDER-TOP)
+          (= check 3))
+     (valid9 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+            (<= (+ (posn-y posn) 2) BORDER-DOWN)
+            (>= (- (posn-y posn) 2) BORDER-TOP)))
+      (= check 3))
+     (valid9 posn count (+ check 1))]
+    
+    [else
+     count]))
+
+
+;exmaple:
+(check-equal? (valid9 (make-posn 0 0) 0 0) 0)
+(check-equal? (valid9 (make-posn 3 3) 0 0) 4)
+(check-equal? (valid9 (make-posn 3 5) 0 0) 1)
+(check-equal? (valid9 (make-posn 1 5) 0 0) 0)
+(check-equal? (valid9 (make-posn 2 2) 0 0) 2)
+
+
+;;valid10 : Board-POSN Natural Natural-> Possibility
+;;to check the possibility of whether the given posn is valid
+
+(define (valid10 posn count check)
+  (cond
+
+    ;;;up
+    [(and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+          (>= (- (posn-x posn) 3) BORDER-TOP)
+          (>= (- (posn-y posn) 3) BORDER-TOP)
+          (= check 0))
+     (valid10 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 1) BORDER-DOWN)
+            (>= (- (posn-x posn) 3) BORDER-TOP)
+            (>= (- (posn-y posn) 3) BORDER-TOP)))
+      (= check 0))
+     (valid10 posn count (+ check 1))]
+
+    
+    ;;;;;down
+    [(and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (>= (- (posn-x posn) 1) BORDER-TOP)
+          (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (= check 1))
+     (valid10 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+            (>= (- (posn-x posn) 1) BORDER-TOP)
+            (<= (+ (posn-y posn) 3) BORDER-DOWN)))
+      (= check 1))
+     (valid10 posn count (+ check 1))]
+
+    ;;;;left
+    [(and (>= (- (posn-x posn) 3) BORDER-TOP)
+          (<= (+ (posn-y posn) 3) BORDER-DOWN)
+          (>= (- (posn-y posn) 1) BORDER-TOP)
+          (= check 2))
+     (valid10 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (>= (- (posn-x posn) 3) BORDER-TOP)
+            (<= (+ (posn-y posn) 3) BORDER-DOWN)
+            (>= (- (posn-y posn) 1) BORDER-TOP)))
+      (= check 2))
+     (valid10 posn count (+ check 1))]
+
+    ;;;;;right
+    [(and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+          (<= (+ (posn-y posn) 1) BORDER-DOWN)
+          (>= (- (posn-y posn) 3) BORDER-TOP)
+          (= check 3))
+     (valid10 posn (+ count COUNT-ONCE) (+ check 1))]
+    [(and
+      (not
+       (and (<= (+ (posn-x posn) 3) BORDER-DOWN)
+            (<= (+ (posn-y posn) 1) BORDER-DOWN)
+            (>= (- (posn-y posn) 3) BORDER-TOP)))
+      (= check 3))
+     (valid10 posn count (+ check 1))]
+    
+    [else
+     count]))
+
+
+;exmaple:
+(check-equal? (valid10 (make-posn 0 0) 0 0) 0)
+(check-equal? (valid10 (make-posn 3 3) 0 0) 4)
+(check-equal? (valid10 (make-posn 3 5) 0 0) 2)
+(check-equal? (valid10 (make-posn 1 5) 0 0) 1)
+(check-equal? (valid10 (make-posn 2 2) 0 0) 1)
